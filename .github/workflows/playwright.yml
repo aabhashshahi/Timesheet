@@ -10,19 +10,30 @@ jobs:
     timeout-minutes: 60
     runs-on: ubuntu-latest
     env:
-      MS_EMAIL: ${{ secrets.MS_EMAIL }}
-      MS_PASSWORD: ${{ secrets.MS_PASSWORD }}
-      SMTP_HOST: ${{ secrets.SMTP_HOST }}
-      SMTP_PORT: ${{ secrets.SMTP_PORT }}
-      SMTP_USER: ${{ secrets.SMTP_USER }}
-      SMTP_PASS: ${{ secrets.SMTP_PASS }}
-      MAIL_TO: ${{ secrets.MAIL_TO }}
-      MAIL_FROM: ${{ secrets.MAIL_FROM }}
+      MS_EMAIL: ${{ secrets.MS_EMAIL != '' && secrets.MS_EMAIL || vars.MS_EMAIL }}
+      MS_PASSWORD: ${{ secrets.MS_PASSWORD != '' && secrets.MS_PASSWORD || vars.MS_PASSWORD }}
+      SMTP_HOST: ${{ secrets.SMTP_HOST != '' && secrets.SMTP_HOST || vars.SMTP_HOST }}
+      SMTP_PORT: ${{ secrets.SMTP_PORT != '' && secrets.SMTP_PORT || vars.SMTP_PORT }}
+      SMTP_USER: ${{ secrets.SMTP_USER != '' && secrets.SMTP_USER || vars.SMTP_USER }}
+      SMTP_PASS: ${{ secrets.SMTP_PASS != '' && secrets.SMTP_PASS || vars.SMTP_PASS }}
+      MAIL_TO: ${{ secrets.MAIL_TO != '' && secrets.MAIL_TO || vars.MAIL_TO }}
+      MAIL_FROM: ${{ secrets.MAIL_FROM != '' && secrets.MAIL_FROM || vars.MAIL_FROM }}
     steps:
     - uses: actions/checkout@v4
     - uses: actions/setup-node@v4
       with:
         node-version: lts/*
+    - name: Validate required env presence (safe)
+      shell: bash
+      run: |
+        echo "MS_EMAIL_SET=$([ -n \"$MS_EMAIL\" ] && echo true || echo false)"
+        echo "MS_PASSWORD_SET=$([ -n \"$MS_PASSWORD\" ] && echo true || echo false)"
+        echo "SMTP_HOST_SET=$([ -n \"$SMTP_HOST\" ] && echo true || echo false)"
+        echo "SMTP_PORT_SET=$([ -n \"$SMTP_PORT\" ] && echo true || echo false)"
+        echo "SMTP_USER_SET=$([ -n \"$SMTP_USER\" ] && echo true || echo false)"
+        echo "SMTP_PASS_SET=$([ -n \"$SMTP_PASS\" ] && echo true || echo false)"
+        echo "MAIL_TO_SET=$([ -n \"$MAIL_TO\" ] && echo true || echo false)"
+        echo "MAIL_FROM_SET=$([ -n \"$MAIL_FROM\" ] && echo true || echo false)"
     - name: Install dependencies
       run: npm ci
     - name: Install Playwright Browsers
