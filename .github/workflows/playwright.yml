@@ -10,19 +10,29 @@ jobs:
     timeout-minutes: 60
     runs-on: ubuntu-latest
     env:
-      MS_EMAIL: ${{ secrets.MS_EMAIL != '' && secrets.MS_EMAIL || vars.MS_EMAIL }}
-      MS_PASSWORD: ${{ secrets.MS_PASSWORD != '' && secrets.MS_PASSWORD || vars.MS_PASSWORD }}
-      SMTP_HOST: ${{ secrets.SMTP_HOST != '' && secrets.SMTP_HOST || vars.SMTP_HOST }}
-      SMTP_PORT: ${{ secrets.SMTP_PORT != '' && secrets.SMTP_PORT || vars.SMTP_PORT }}
-      SMTP_USER: ${{ secrets.SMTP_USER != '' && secrets.SMTP_USER || vars.SMTP_USER }}
-      SMTP_PASS: ${{ secrets.SMTP_PASS != '' && secrets.SMTP_PASS || vars.SMTP_PASS }}
-      MAIL_TO: ${{ secrets.MAIL_TO != '' && secrets.MAIL_TO || vars.MAIL_TO }}
-      MAIL_FROM: ${{ secrets.MAIL_FROM != '' && secrets.MAIL_FROM || vars.MAIL_FROM }}
+      MS_EMAIL: ${{ secrets.MS_EMAIL }}
+      MS_PASSWORD: ${{ secrets.MS_PASSWORD }}
+      SMTP_HOST: ${{ secrets.SMTP_HOST }}
+      SMTP_PORT: ${{ secrets.SMTP_PORT }}
+      SMTP_USER: ${{ secrets.SMTP_USER }}
+      SMTP_PASS: ${{ secrets.SMTP_PASS }}
+      MAIL_TO: ${{ secrets.MAIL_TO }}
+      MAIL_FROM: ${{ secrets.MAIL_FROM }}
     steps:
     - uses: actions/checkout@v4
     - uses: actions/setup-node@v4
       with:
         node-version: lts/*
+    - name: Validate secret bindings (safe)
+      run: |
+        echo "HAS_SECRET_MS_EMAIL=${{ secrets.MS_EMAIL != '' }}"
+        echo "HAS_SECRET_MS_PASSWORD=${{ secrets.MS_PASSWORD != '' }}"
+        echo "HAS_SECRET_SMTP_HOST=${{ secrets.SMTP_HOST != '' }}"
+        echo "HAS_SECRET_SMTP_PORT=${{ secrets.SMTP_PORT != '' }}"
+        echo "HAS_SECRET_SMTP_USER=${{ secrets.SMTP_USER != '' }}"
+        echo "HAS_SECRET_SMTP_PASS=${{ secrets.SMTP_PASS != '' }}"
+        echo "HAS_SECRET_MAIL_TO=${{ secrets.MAIL_TO != '' }}"
+        echo "HAS_SECRET_MAIL_FROM=${{ secrets.MAIL_FROM != '' }}"
     - name: Validate required env presence (safe)
       shell: bash
       run: |
