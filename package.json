@@ -1,0 +1,19 @@
+{
+  "name": "automate--timesheet",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test:e2e": "playwright test",
+    "report:slack": "node scripts/send-slack-report.js",
+    "test:notify": "playwright test && node scripts/send-slack-report.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "@playwright/test": "^1.58.2",
+    "@types/node": "^25.2.3"
+  }
+}
