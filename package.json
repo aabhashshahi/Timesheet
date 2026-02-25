@@ -6,7 +6,7 @@
   "scripts": {
     "test:e2e": "playwright test",
     "report:slack": "node scripts/send-slack-report.js",
-    "test:notify": "playwright test && node scripts/send-slack-report.js"
+    "test:notify": "node scripts/test-and-notify.js"
   },
   "keywords": [],
   "author": "",

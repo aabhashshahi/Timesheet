@@ -16,6 +16,7 @@ pages/
   settingspage.js
 scripts/
   send-slack-report.js
+  test-and-notify.js
 tests/
   constants.js
   login/
@@ -68,6 +69,8 @@ Run all tests + Slack summary:
 npm run test:notify
 ```
 
+`test:notify` always attempts Slack reporting after tests, even if some tests fail.
+
 Send Slack summary only (requires existing JSON report):
 
 ```bash
@@ -99,27 +102,22 @@ Open HTML report:
 npx playwright show-report
 ```
 
-## CI Email Automation
+## CI Slack Automation
 
 Workflow: `.github/workflows/playwright.yml`
 
-After each CI run, an email summary is sent automatically (if SMTP secrets are configured), including:
+After each CI run, a Slack summary is sent automatically (if Slack webhook secret is configured), including:
 
 - run status (PASSED/FAILED)
 - total, passed, failed, skipped
+- test-level details (failed and passed lists, capped for message size)
 - GitHub Actions run URL
-- `test-results/results.json` attachment
 
 Required GitHub repository secrets:
 
 - `MS_EMAIL`
 - `MS_PASSWORD`
-- `SMTP_HOST`
-- `SMTP_PORT`
-- `SMTP_USER`
-- `SMTP_PASS`
-- `MAIL_TO`
-- `MAIL_FROM`
+- `SLACK_WEBHOOK_URL`
 
 ## Current Coverage
 
