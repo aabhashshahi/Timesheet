@@ -9,6 +9,15 @@ jobs:
   test:
     timeout-minutes: 60
     runs-on: ubuntu-latest
+    env:
+      MS_EMAIL: ${{ secrets.MS_EMAIL }}
+      MS_PASSWORD: ${{ secrets.MS_PASSWORD }}
+      SMTP_HOST: ${{ secrets.SMTP_HOST }}
+      SMTP_PORT: ${{ secrets.SMTP_PORT }}
+      SMTP_USER: ${{ secrets.SMTP_USER }}
+      SMTP_PASS: ${{ secrets.SMTP_PASS }}
+      MAIL_TO: ${{ secrets.MAIL_TO }}
+      MAIL_FROM: ${{ secrets.MAIL_FROM }}
     steps:
     - uses: actions/checkout@v4
     - uses: actions/setup-node@v4
@@ -22,9 +31,6 @@ jobs:
       id: playwright_tests
       continue-on-error: true
       run: npx playwright test
-      env:
-        MS_EMAIL: ${{ secrets.MS_EMAIL }}
-        MS_PASSWORD: ${{ secrets.MS_PASSWORD }}
     - name: Build email summary
       if: ${{ always() }}
       id: summary
@@ -85,17 +91,17 @@ jobs:
         fs.appendFileSync(outputPath, `body<<EOF\n${body}\nEOF\n`);
         NODE
     - name: Send email report
-      if: ${{ always() && secrets.SMTP_HOST != '' && secrets.SMTP_PORT != '' && secrets.SMTP_USER != '' && secrets.SMTP_PASS != '' && secrets.MAIL_TO != '' && secrets.MAIL_FROM != '' }}
+      if: ${{ always() && env.SMTP_HOST != '' && env.SMTP_PORT != '' && env.SMTP_USER != '' && env.SMTP_PASS != '' && env.MAIL_TO != '' && env.MAIL_FROM != '' }}
       uses: dawidd6/action-send-mail@v3
       with:
-        server_address: ${{ secrets.SMTP_HOST }}
-        server_port: ${{ secrets.SMTP_PORT }}
-        username: ${{ secrets.SMTP_USER }}
-        password: ${{ secrets.SMTP_PASS }}
+        server_address: ${{ env.SMTP_HOST }}
+        server_port: ${{ env.SMTP_PORT }}
+        username: ${{ env.SMTP_USER }}
+        password: ${{ env.SMTP_PASS }}
         subject: ${{ steps.summary.outputs.subject }}
         body: ${{ steps.summary.outputs.body }}
-        to: ${{ secrets.MAIL_TO }}
-        from: ${{ secrets.MAIL_FROM }}
+        to: ${{ env.MAIL_TO }}
+        from: ${{ env.MAIL_FROM }}
         secure: false
         convert_markdown: false
         attachments: test-results/results.json
