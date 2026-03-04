@@ -25,7 +25,14 @@ class LoginPage {
     }
 
     async clickStaySignedInNo() {
-        await this.staySignedInNoButton.click();
+        const isVisible = await this.staySignedInNoButton
+            .waitFor({ state: 'visible', timeout: 5000 })
+            .then(() => true)
+            .catch(() => false);
+
+        if (isVisible) {
+            await this.staySignedInNoButton.click();
+        }
     }
 
     async loginToApplication() {
