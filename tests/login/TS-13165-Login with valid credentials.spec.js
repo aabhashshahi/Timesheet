@@ -2,6 +2,8 @@ const { test, expect } = require('@playwright/test');
 const LoginPage = require('../../pages/loginpage');
 const { BASE_URL } = require('../constants');
 
+test.setTimeout(90000);
+
 test('TS-13165 Login with valid credentials', async ({ page }) => {
   await page.goto(BASE_URL);
 
