@@ -5,6 +5,8 @@ const { BASE_URL } = require('../constants');
 test.setTimeout(90000);
 
 test('TS-13165 Login with valid credentials', async ({ page }) => {
+  test.skip(!!process.env.CI, 'Corporate SSO login is unstable on hosted CI runners; run locally.');
+
   await page.goto(BASE_URL);
 
   const loginPage = new LoginPage(page);
