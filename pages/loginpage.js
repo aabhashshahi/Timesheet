@@ -24,6 +24,27 @@ class LoginPage {
         await this.submitButton.click();
     }
 
+    async handlePostSubmitPrompts() {
+        const optionalButtons = [
+            this.page.getByRole('button', { name: /No|Skip|Cancel|Not now/i }).first(),
+            this.page.locator('#idBtn_Back').first(),
+            this.page.locator('#idSIButton9').first(),
+        ];
+
+        for (let attempt = 0; attempt < 6; attempt += 1) {
+            for (const button of optionalButtons) {
+                const visible = await button.isVisible().catch(() => false);
+                if (!visible) continue;
+                await button.click({ timeout: 3000 }).catch(() => {});
+                await this.page.waitForTimeout(500);
+            }
+
+            const reachedApp = /timesheet|userfavourite|usersheet|setting/i.test(this.page.url());
+            if (reachedApp) return;
+            await this.page.waitForTimeout(1000);
+        }
+    }
+
     async clickStaySignedInNo() {
         const isVisible = await this.staySignedInNoButton
             .waitFor({ state: 'visible', timeout: 5000 })
@@ -47,7 +68,11 @@ class LoginPage {
         await this.clickNext();
         await this.enterPassword(password);
         await this.clickSubmit();
+        await this.handlePostSubmitPrompts();
         await this.clickStaySignedInNo();
+        await this.page
+            .waitForURL(/timesheet|userfavourite|usersheet|setting/i, { timeout: 90000 })
+            .catch(() => {});
     }
 }
 

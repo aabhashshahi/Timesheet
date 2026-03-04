@@ -8,5 +8,8 @@ test('TS-13165 Login with valid credentials', async ({ page }) => {
   const loginPage = new LoginPage(page);
   await loginPage.loginToApplication();
 
-  await expect(page).toHaveURL(/timesheet/i);
+  await expect(page).toHaveURL(/timesheet-test\.deheus-apps\.com/i, { timeout: 60000 });
+  await expect(
+    page.getByRole('link', { name: /Timesheet by Month|Timesheet by Day|Timesheet Overview/i }).first()
+  ).toBeVisible();
 });
