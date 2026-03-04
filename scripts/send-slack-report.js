@@ -5,7 +5,15 @@ const https = require('https');
 const ROOT_DIR = path.resolve(__dirname, '..');
 const ENV_PATH = path.join(ROOT_DIR, '.env');
 const REPORT_PATH = path.join(ROOT_DIR, 'test-results', 'results.json');
-const DEFAULT_DETAIL_LIMIT = 20;
+const HTML_REPORT_PATH = path.join(ROOT_DIR, 'playwright-report', 'index.html');
+const DEFAULT_DETAIL_LIMIT = 100;
+const DEFAULT_HTML_REPORT_NAME = 'report.html';
+const TABLE_WIDTHS = {
+  index: 3,
+  module: 18,
+  testId: 10,
+  title: 47,
+};
 
 function loadEnvFile(filePath) {
   if (!fs.existsSync(filePath)) return;
@@ -125,7 +133,8 @@ function toTitleCase(value) {
 function parseTestMetadata(testCase) {
   const rawFile = (testCase.file || '').replace(/\\/g, '/').replace(/^\.\//, '');
   const parts = rawFile.split('/').filter(Boolean);
-  const moduleName = toTitleCase(parts[0] || '');
+  const moduleSegment = parts[0] && parts[0].toLowerCase() === 'tests' ? parts[1] || parts[0] : parts[0] || '';
+  const moduleName = toTitleCase(moduleSegment);
   const fileName = parts[parts.length - 1] || '';
   const baseName = fileName
     .replace(/\.spec\.[cm]?[jt]sx?$/i, '')
@@ -165,12 +174,12 @@ function buildTableRows(testCases, limit, includeError = false) {
   const visibleCases = testCases.slice(0, limit);
   return visibleCases.map((testCase, index) => {
     const parsed = parseTestMetadata(testCase);
-    const titleSuffix = includeError && testCase.error ? ` | ${truncate(firstLine(testCase.error), 45)}` : '';
+    const titleSuffix = includeError && testCase.error ? ` | ${truncate(firstLine(testCase.error), 35)}` : '';
     return [
-      formatCell(`${index + 1}`, 3),
-      formatCell(parsed.moduleName, 10),
-      formatCell(parsed.testCaseId, 10),
-      formatCell(`${parsed.title}${titleSuffix}`, 55),
+      formatCell(`${index + 1}`, TABLE_WIDTHS.index),
+      formatCell(parsed.moduleName, TABLE_WIDTHS.module),
+      formatCell(parsed.testCaseId, TABLE_WIDTHS.testId),
+      formatCell(`${parsed.title}${titleSuffix}`, TABLE_WIDTHS.title),
     ].join(' | ');
   });
 }
@@ -180,12 +189,14 @@ function buildTableChunks(title, testCases, limit, includeError = false, maxChar
 
   const rows = buildTableRows(testCases, limit, includeError);
   const header = [
-    formatCell('#', 3),
-    formatCell('Module', 10),
-    formatCell('Test ID', 10),
-    formatCell('Title', 55),
+    formatCell('#', TABLE_WIDTHS.index),
+    formatCell('Module', TABLE_WIDTHS.module),
+    formatCell('Test ID', TABLE_WIDTHS.testId),
+    formatCell('Title', TABLE_WIDTHS.title),
   ].join(' | ');
-  const separator = `${'-'.repeat(3)}-+-${'-'.repeat(10)}-+-${'-'.repeat(10)}-+-${'-'.repeat(55)}`;
+  const separator = `${'-'.repeat(TABLE_WIDTHS.index)}-+-${'-'.repeat(TABLE_WIDTHS.module)}-+-${'-'.repeat(
+    TABLE_WIDTHS.testId
+  )}-+-${'-'.repeat(TABLE_WIDTHS.title)}`;
 
   const chunks = [];
   let continuation = 1;
@@ -232,9 +243,9 @@ function getRunStatus(totals) {
   return 'UNKNOWN';
 }
 
-function postToSlack(webhookUrl, payload) {
+function requestHttps({ url, method = 'POST', headers = {}, body }) {
   return new Promise((resolve, reject) => {
-    const request = https.request(webhookUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' } }, (response) => {
+    const request = https.request(url, { method, headers }, (response) => {
       let responseBody = '';
 
       response.on('data', (chunk) => {
@@ -242,27 +253,183 @@ function postToSlack(webhookUrl, payload) {
       });
 
       response.on('end', () => {
-        if (response.statusCode >= 200 && response.statusCode < 300) {
-          resolve();
-          return;
-        }
-        reject(new Error(`Slack send failed: ${response.statusCode} ${responseBody}`));
+        resolve({
+          statusCode: response.statusCode,
+          body: responseBody,
+          headers: response.headers,
+        });
       });
     });
 
     request.on('error', reject);
-    request.write(JSON.stringify(payload));
+    if (body) request.write(body);
     request.end();
+  });
+}
+
+async function postToSlack(webhookUrl, payload) {
+  const body = JSON.stringify(payload);
+  const response = await requestHttps({
+    url: webhookUrl,
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Content-Length': Buffer.byteLength(body),
+    },
+    body,
+  });
+
+  if (response.statusCode < 200 || response.statusCode >= 300) {
+    throw new Error(`Slack send failed: ${response.statusCode} ${response.body}`);
+  }
+}
+
+async function postSummaryWithBot(token, channelId, payload) {
+  return postSlackApi(token, 'chat.postMessage', {
+    channel: channelId,
+    text: payload.text,
+    blocks: payload.blocks,
+    unfurl_links: false,
+    unfurl_media: false,
+  });
+}
+
+async function postSlackApi(token, methodName, payload, options = {}) {
+  const useFormEncoding = options.formEncoded === true;
+  const body = useFormEncoding
+    ? new URLSearchParams(payload || {}).toString()
+    : JSON.stringify(payload || {});
+
+  const response = await requestHttps({
+    url: `https://slack.com/api/${methodName}`,
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': useFormEncoding
+        ? 'application/x-www-form-urlencoded; charset=utf-8'
+        : 'application/json; charset=utf-8',
+      'Content-Length': Buffer.byteLength(body),
+    },
+    body,
+  });
+
+  if (response.statusCode < 200 || response.statusCode >= 300) {
+    throw new Error(`Slack API ${methodName} request failed: ${response.statusCode} ${response.body}`);
+  }
+
+  let parsed;
+  try {
+    parsed = JSON.parse(response.body);
+  } catch (error) {
+    throw new Error(`Slack API ${methodName} returned invalid JSON: ${firstLine(error.message)}`);
+  }
+
+  if (!parsed.ok) {
+    const metadataMessages = Array.isArray(parsed.response_metadata && parsed.response_metadata.messages)
+      ? parsed.response_metadata.messages
+      : [];
+    const metadataWarnings = Array.isArray(parsed.response_metadata && parsed.response_metadata.warnings)
+      ? parsed.response_metadata.warnings
+      : [];
+    const detailParts = [...metadataMessages, ...metadataWarnings].filter(Boolean);
+    const detailText = detailParts.length > 0 ? ` (${detailParts.join(' | ')})` : '';
+    throw new Error(`Slack API ${methodName} failed: ${parsed.error || 'unknown_error'}${detailText}`);
+  }
+
+  return parsed;
+}
+
+async function uploadSlackExternalFile(uploadUrl, fileBuffer, contentType) {
+  const response = await requestHttps({
+    url: uploadUrl,
+    method: 'POST',
+    headers: {
+      'Content-Type': contentType,
+      'Content-Length': fileBuffer.length,
+    },
+    body: fileBuffer,
+  });
+
+  if (response.statusCode < 200 || response.statusCode >= 300) {
+    throw new Error(`Slack external upload failed: ${response.statusCode} ${response.body}`);
+  }
+}
+
+async function uploadFileToSlack({ token, channelId, filePath, fileName, contentType, initialComment }) {
+  if (!fs.existsSync(filePath)) {
+    return {
+      skipped: true,
+      reason: `File not found: ${path.relative(ROOT_DIR, filePath)}`,
+    };
+  }
+
+  const safeFileName = path.basename((fileName || '').trim());
+  if (!safeFileName) {
+    return {
+      skipped: true,
+      reason: 'Upload filename is empty. Provide a valid file name.',
+    };
+  }
+
+  const fileBuffer = fs.readFileSync(filePath);
+  if (fileBuffer.length <= 0) {
+    return {
+      skipped: true,
+      reason: `File is empty: ${path.relative(ROOT_DIR, filePath)}`,
+    };
+  }
+
+  const uploadInit = await postSlackApi(token, 'files.getUploadURLExternal', {
+    filename: safeFileName,
+    length: `${fileBuffer.length}`,
+  }, { formEncoded: true });
+
+  if (!uploadInit.upload_url || !uploadInit.file_id) {
+    throw new Error('Slack API files.getUploadURLExternal did not return upload_url and file_id.');
+  }
+
+  await uploadSlackExternalFile(uploadInit.upload_url, fileBuffer, contentType);
+
+  const uploadComplete = await postSlackApi(token, 'files.completeUploadExternal', {
+    files: [{ id: uploadInit.file_id, title: safeFileName }],
+    channel_id: channelId,
+    initial_comment: initialComment,
+  });
+
+  const uploadedFile = Array.isArray(uploadComplete.files) ? uploadComplete.files[0] : null;
+  return {
+    skipped: false,
+    fileId: uploadInit.file_id,
+    permalink: uploadedFile && uploadedFile.permalink ? uploadedFile.permalink : '',
+  };
+}
+
+async function uploadHtmlReportToSlack({ token, channelId, filePath, fileName, initialComment }) {
+  return uploadFileToSlack({
+    token,
+    channelId,
+    filePath,
+    fileName,
+    contentType: 'text/html; charset=utf-8',
+    initialComment,
   });
 }
 
 async function main() {
   loadEnvFile(ENV_PATH);
 
-  const webhookUrl = process.env.SLACK_WEBHOOK_URL;
-  if (!webhookUrl) {
-    throw new Error('SLACK_WEBHOOK_URL is missing. Add it to .env.');
+  const webhookUrl = process.env.SLACK_WEBHOOK_URL || '';
+  const slackBotToken = process.env.SLACK_BOT_TOKEN || '';
+  const slackChannelId = process.env.SLACK_CHANNEL_ID || '';
+  const hasBotSummaryPath = Boolean(slackBotToken && slackChannelId);
+
+  if (!webhookUrl && !hasBotSummaryPath) {
+    throw new Error('Slack summary cannot be sent. Set SLACK_WEBHOOK_URL or SLACK_BOT_TOKEN + SLACK_CHANNEL_ID.');
   }
+  const htmlReportPath = process.env.SLACK_HTML_REPORT_PATH
+    ? path.resolve(ROOT_DIR, process.env.SLACK_HTML_REPORT_PATH)
+    : HTML_REPORT_PATH;
+  const htmlReportName = (process.env.SLACK_HTML_REPORT_NAME || DEFAULT_HTML_REPORT_NAME).trim() || DEFAULT_HTML_REPORT_NAME;
 
   let testCases = [];
   let reportWarning = '';
@@ -378,11 +545,62 @@ async function main() {
     blocks,
   };
 
-  await postToSlack(webhookUrl, payload);
-  console.log('Slack notification sent.');
+  let summarySent = false;
+  let webhookError = '';
+
+  if (webhookUrl) {
+    try {
+      await postToSlack(webhookUrl, payload);
+      summarySent = true;
+      console.log('Slack summary notification sent (webhook).');
+    } catch (error) {
+      webhookError = firstLine(error.message);
+      console.warn(`Slack webhook summary failed: ${webhookError}`);
+    }
+  }
+
+  if (!summarySent && hasBotSummaryPath) {
+    await postSummaryWithBot(slackBotToken, slackChannelId, payload);
+    summarySent = true;
+    console.log('Slack summary notification sent (bot).');
+  }
+
+  if (!summarySent) {
+    throw new Error(
+      `Slack summary could not be sent.${webhookError ? ` Webhook error: ${webhookError}` : ''}`
+    );
+  }
+
+  if (!slackBotToken || !slackChannelId) {
+    console.log('Slack HTML report upload skipped: set SLACK_BOT_TOKEN and SLACK_CHANNEL_ID to enable it.');
+    return;
+  }
+
+  try {
+    const initialComment = `For detailed report, download this HTML file.${runUrl ? `\nRun: ${runUrl}` : ''}`;
+    const uploadResult = await uploadHtmlReportToSlack({
+      token: slackBotToken,
+      channelId: slackChannelId,
+      filePath: htmlReportPath,
+      fileName: htmlReportName,
+      initialComment,
+    });
+
+    if (uploadResult.skipped) {
+      console.warn(`Slack HTML report upload skipped: ${uploadResult.reason}`);
+      return;
+    }
+
+    console.log(
+      `Slack HTML report uploaded${uploadResult.permalink ? `: ${uploadResult.permalink}` : ` (file ID: ${uploadResult.fileId})`}.`
+    );
+  } catch (error) {
+    console.warn(`Slack HTML report upload failed (non-blocking): ${firstLine(error.message)}`);
+  }
 }
 
 main().catch((error) => {
   console.error(error.message);
   process.exit(1);
 });
+

@@ -4,9 +4,12 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test:e2e": "playwright test",
+    "test:e2e": "node scripts/test-and-notify.js",
+    "test:only": "node scripts/test-and-notify.js",
+    "test:raw": "playwright test",
     "report:slack": "node scripts/send-slack-report.js",
-    "test:notify": "node scripts/test-and-notify.js"
+    "test:notify": "node scripts/test-and-notify.js",
+    "test:ordered": "node scripts/test-and-notify.js tests/login tests/settings \"tests/timesheet by day\" \"tests/timesheet by month\" tests/ufavourite \"tests/timesheet overview\" --workers=1"
   },
   "keywords": [],
   "author": "",
@@ -17,3 +20,4 @@
     "@types/node": "^25.2.3"
   }
 }
+
