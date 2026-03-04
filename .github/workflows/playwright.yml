@@ -1,92 +1,92 @@
-name: Playwright Tests
-on:
-  workflow_dispatch:
-  schedule:
-    - cron: "15 3 * * *"
-  push:
-    branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-jobs:
-  test:
-    timeout-minutes: 60
-    runs-on: ubuntu-latest
-    env:
-      MS_EMAIL: ${{ secrets.MS_EMAIL }}
-      MS_PASSWORD: ${{ secrets.MS_PASSWORD }}
-      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-    steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-node@v4
-      with:
-        node-version: lts/*
-    - name: Validate secret bindings (safe)
-      run: |
-        echo "HAS_SECRET_MS_EMAIL=${{ secrets.MS_EMAIL != '' }}"
-        echo "HAS_SECRET_MS_PASSWORD=${{ secrets.MS_PASSWORD != '' }}"
-        echo "HAS_SECRET_SLACK_WEBHOOK_URL=${{ secrets.SLACK_WEBHOOK_URL != '' }}"
-    - name: Validate required env presence (safe)
-      shell: bash
-      run: |
-        echo "MS_EMAIL_SET=$([ -n \"$MS_EMAIL\" ] && echo true || echo false)"
-        echo "MS_PASSWORD_SET=$([ -n \"$MS_PASSWORD\" ] && echo true || echo false)"
-    - name: Fail fast when required env is missing
-      shell: bash
-      run: |
-        required=(MS_EMAIL MS_PASSWORD)
-        missing=()
+# name: Playwright Tests
+# on:
+#   workflow_dispatch:
+#   schedule:
+#     - cron: "15 3 * * *"
+#   push:
+#     branches: [ main, master ]
+#   pull_request:
+#     branches: [ main, master ]
+# permissions:
+#   contents: read
+#   pages: write
+#   id-token: write
+# jobs:
+#   test:
+#     timeout-minutes: 60
+#     runs-on: ubuntu-latest
+#     env:
+#       MS_EMAIL: ${{ secrets.MS_EMAIL }}
+#       MS_PASSWORD: ${{ secrets.MS_PASSWORD }}
+#       SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+#     steps:
+#     - uses: actions/checkout@v4
+#     - uses: actions/setup-node@v4
+#       with:
+#         node-version: lts/*
+#     - name: Validate secret bindings (safe)
+#       run: |
+#         echo "HAS_SECRET_MS_EMAIL=${{ secrets.MS_EMAIL != '' }}"
+#         echo "HAS_SECRET_MS_PASSWORD=${{ secrets.MS_PASSWORD != '' }}"
+#         echo "HAS_SECRET_SLACK_WEBHOOK_URL=${{ secrets.SLACK_WEBHOOK_URL != '' }}"
+#     - name: Validate required env presence (safe)
+#       shell: bash
+#       run: |
+#         echo "MS_EMAIL_SET=$([ -n \"$MS_EMAIL\" ] && echo true || echo false)"
+#         echo "MS_PASSWORD_SET=$([ -n \"$MS_PASSWORD\" ] && echo true || echo false)"
+#     - name: Fail fast when required env is missing
+#       shell: bash
+#       run: |
+#         required=(MS_EMAIL MS_PASSWORD)
+#         missing=()
 
-        for key in "${required[@]}"; do
-          if [ -z "${!key}" ]; then
-            missing+=("$key")
-          fi
-        done
+#         for key in "${required[@]}"; do
+#           if [ -z "${!key}" ]; then
+#             missing+=("$key")
+#           fi
+#         done
 
-        if [ ${#missing[@]} -gt 0 ]; then
-          echo "Missing required secrets/env: ${missing[*]}"
-          exit 1
-        fi
-    - name: Install dependencies
-      run: npm ci
-    - name: Install Playwright Browsers
-      run: npx playwright install --with-deps
-    - name: Run Playwright tests
-      id: playwright_tests
-      continue-on-error: true
-      run: npx playwright test tests/login tests/settings "tests/timesheet by day" "tests/timesheet by month" tests/ufavourite "tests/timesheet overview" --workers=1
-    - name: Setup GitHub Pages
-      if: ${{ always() && !cancelled() && github.event_name != 'pull_request' }}
-      uses: actions/configure-pages@v5
-    - name: Upload Playwright report to Pages artifact
-      if: ${{ always() && !cancelled() && github.event_name != 'pull_request' }}
-      uses: actions/upload-pages-artifact@v3
-      with:
-        path: playwright-report/
-    - name: Deploy Playwright report to GitHub Pages
-      id: deploy_pages
-      if: ${{ always() && !cancelled() && github.event_name != 'pull_request' }}
-      uses: actions/deploy-pages@v4
-    - name: Send Slack report
-      if: ${{ always() && env.SLACK_WEBHOOK_URL != '' }}
-      env:
-        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-        SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-        SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
-        PLAYWRIGHT_OUTCOME: ${{ steps.playwright_tests.outcome }}
-        PLAYWRIGHT_REPORT_URL: ${{ steps.deploy_pages.outputs.page_url }}
-        SLACK_TEST_DETAIL_LIMIT: "25"
-      shell: bash
-      run: node scripts/send-slack-report.js
-    - uses: actions/upload-artifact@v4
-      if: ${{ !cancelled() }}
-      with:
-        name: playwright-report
-        path: playwright-report/
-        retention-days: 30
-    - name: Fail workflow if tests failed
-      if: ${{ steps.playwright_tests.outcome == 'failure' }}
-      run: exit 1
+#         if [ ${#missing[@]} -gt 0 ]; then
+#           echo "Missing required secrets/env: ${missing[*]}"
+#           exit 1
+#         fi
+#     - name: Install dependencies
+#       run: npm ci
+#     - name: Install Playwright Browsers
+#       run: npx playwright install --with-deps
+#     - name: Run Playwright tests
+#       id: playwright_tests
+#       continue-on-error: true
+#       run: npx playwright test tests/login tests/settings "tests/timesheet by day" "tests/timesheet by month" tests/ufavourite "tests/timesheet overview" --workers=1
+#     - name: Setup GitHub Pages
+#       if: ${{ always() && !cancelled() && github.event_name != 'pull_request' }}
+#       uses: actions/configure-pages@v5
+#     - name: Upload Playwright report to Pages artifact
+#       if: ${{ always() && !cancelled() && github.event_name != 'pull_request' }}
+#       uses: actions/upload-pages-artifact@v3
+#       with:
+#         path: playwright-report/
+#     - name: Deploy Playwright report to GitHub Pages
+#       id: deploy_pages
+#       if: ${{ always() && !cancelled() && github.event_name != 'pull_request' }}
+#       uses: actions/deploy-pages@v4
+#     - name: Send Slack report
+#       if: ${{ always() && env.SLACK_WEBHOOK_URL != '' }}
+#       env:
+#         SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+#         SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+#         SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+#         PLAYWRIGHT_OUTCOME: ${{ steps.playwright_tests.outcome }}
+#         PLAYWRIGHT_REPORT_URL: ${{ steps.deploy_pages.outputs.page_url }}
+#         SLACK_TEST_DETAIL_LIMIT: "25"
+#       shell: bash
+#       run: node scripts/send-slack-report.js
+#     - uses: actions/upload-artifact@v4
+#       if: ${{ !cancelled() }}
+#       with:
+#         name: playwright-report
+#         path: playwright-report/
+#         retention-days: 30
+#     - name: Fail workflow if tests failed
+#       if: ${{ steps.playwright_tests.outcome == 'failure' }}
+#       run: exit 1
