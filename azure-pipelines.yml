@@ -14,7 +14,7 @@ pool:
   vmImage: "ubuntu-latest"
 
 variables:
-  NODE_VERSION: "lts/*"
+  NODE_VERSION: "20.x"
   PLAYWRIGHT_HTML_OPEN: "never"
 
 steps:
@@ -24,22 +24,6 @@ steps:
     displayName: "Use Node.js $(NODE_VERSION)"
     inputs:
       versionSpec: "$(NODE_VERSION)"
-
-  - script: |
-      echo "MS_EMAIL_SET=$([ -n "$MS_EMAIL" ] && echo true || echo false)"
-      echo "MS_PASSWORD_SET=$([ -n "$MS_PASSWORD" ] && echo true || echo false)"
-    displayName: "Validate required env presence (safe)"
-
-  - script: |
-      missing=()
-      [ -z "$MS_EMAIL" ] && missing+=("MS_EMAIL")
-      [ -z "$MS_PASSWORD" ] && missing+=("MS_PASSWORD")
-
-      if [ ${#missing[@]} -gt 0 ]; then
-        echo "Missing required variables: ${missing[*]}"
-        exit 1
-      fi
-    displayName: "Fail fast when required env is missing"
 
   - script: npm ci
     displayName: "Install dependencies"
@@ -56,8 +40,7 @@ steps:
       PLAYWRIGHT_HTML_OPEN: $(PLAYWRIGHT_HTML_OPEN)
     continueOnError: true
 
-  - script: |
-      node scripts/send-slack-report.js
+  - script: node scripts/send-slack-report.js
     displayName: "Send Slack report"
     condition: and(always(), ne(variables['SLACK_WEBHOOK_URL'], ''))
     env:
@@ -66,11 +49,17 @@ steps:
       SLACK_CHANNEL_ID: $(SLACK_CHANNEL_ID)
       SLACK_TEST_DETAIL_LIMIT: "100"
 
+  - script: |
+      mkdir -p "$(Build.SourcesDirectory)/playwright-report"
+      mkdir -p "$(Build.SourcesDirectory)/test-results"
+    displayName: "Ensure artifact directories exist"
+    condition: always()
+
   - task: PublishPipelineArtifact@1
     displayName: "Publish Playwright HTML report artifact"
     condition: always()
     inputs:
-      targetPath: "playwright-report"
+      targetPath: "$(Build.SourcesDirectory)/playwright-report"
       artifact: "playwright-report"
       publishLocation: "pipeline"
 
@@ -78,6 +67,6 @@ steps:
     displayName: "Publish test-results artifact"
     condition: always()
     inputs:
-      targetPath: "test-results"
+      targetPath: "$(Build.SourcesDirectory)/test-results"
       artifact: "test-results"
       publishLocation: "pipeline"
