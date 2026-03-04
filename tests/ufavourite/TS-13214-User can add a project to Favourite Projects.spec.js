@@ -1,7 +1,7 @@
 const { test, expect } = require('./fixtures');
 const { loginAndOpenFavourites, pickAddableProjectOption } = require('./helpers');
 
-test.setTimeout(90000);
+test.setTimeout(60000);
 
 test('TS-13214 User can add a project to Favourite Projects', async ({ page }) => {
   const favouritesPage = await loginAndOpenFavourites(page);
@@ -26,5 +26,6 @@ test('TS-13214 User can add a project to Favourite Projects', async ({ page }) =
   test.skip(!rowAdded, 'Project add action did not produce a visible new row.');
   expect(rowAdded).toBeTruthy();
 });
+
 
 

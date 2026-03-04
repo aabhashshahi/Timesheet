@@ -1,7 +1,7 @@
 const { test, expect } = require('./fixtures');
 const { loginAndOpenTimesheetByMonth, findDuplicateProjectOption } = require('./helpers');
 
-test.setTimeout(90000);
+test.setTimeout(60000);
 
 test('TS-13306 Prevent Adding Duplicate Projects', async ({ page }) => {
   const timesheetPage = await loginAndOpenTimesheetByMonth(page);
@@ -24,3 +24,4 @@ test('TS-13306 Prevent Adding Duplicate Projects', async ({ page }) => {
 
   expect(duplicatePrevented).toBeTruthy();
 });
+

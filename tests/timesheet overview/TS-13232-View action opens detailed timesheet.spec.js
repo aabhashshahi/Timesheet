@@ -1,7 +1,7 @@
 const { test, expect } = require('./fixtures');
 const { loginAndOpenTimesheetOverview } = require('./helpers');
 
-test.setTimeout(90000);
+test.setTimeout(60000);
 
 test('TS-13232 View action opens detailed timesheet', async ({ page }) => {
   const overviewPage = await loginAndOpenTimesheetOverview(page);
@@ -18,3 +18,4 @@ test('TS-13232 View action opens detailed timesheet', async ({ page }) => {
     }).first()
   ).toBeVisible();
 });
+

@@ -1,7 +1,7 @@
-﻿const { test, expect } = require('./fixtures');
+const { test, expect } = require('./fixtures');
 const { loginAndOpenTimesheetByDay } = require('./helpers');
 
-test.setTimeout(90000);
+test.setTimeout(60000);
 
 test('TS-13284 system rejects negative hours', async ({ page }) => {
   const timesheetPage = await loginAndOpenTimesheetByDay(page);
@@ -19,5 +19,6 @@ test('TS-13284 system rejects negative hours', async ({ page }) => {
 
   expect(isRejected).toBeTruthy();
 });
+
 
 

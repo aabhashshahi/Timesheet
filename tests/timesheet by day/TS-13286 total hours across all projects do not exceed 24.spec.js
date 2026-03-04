@@ -1,7 +1,7 @@
-﻿const { test, expect } = require('./fixtures');
+const { test, expect } = require('./fixtures');
 const { loginAndOpenTimesheetByDay } = require('./helpers');
 
-test.setTimeout(90000);
+test.setTimeout(60000);
 
 test('TS-13286 total hours across all projects do not exceed 24', async ({ page }) => {
   const timesheetPage = await loginAndOpenTimesheetByDay(page);
@@ -31,5 +31,6 @@ test('TS-13286 total hours across all projects do not exceed 24', async ({ page 
 
   expect(withinLimit).toBeTruthy();
 });
+
 
 

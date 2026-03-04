@@ -1,7 +1,7 @@
 const { test, expect } = require('./fixtures');
 const { loginAndOpenTimesheetByMonth } = require('./helpers');
 
-test.setTimeout(90000);
+test.setTimeout(60000);
 
 test('TS-13313 Undo Appears After Clicking Delete', async ({ page }) => {
   const timesheetPage = await loginAndOpenTimesheetByMonth(page);
@@ -27,3 +27,4 @@ test('TS-13313 Undo Appears After Clicking Delete', async ({ page }) => {
   test.skip(!undoVisible && !rowMarkedDeleted, 'Undo state did not appear after delete action in current data state.');
   expect(undoVisible || rowMarkedDeleted).toBeTruthy();
 });
+

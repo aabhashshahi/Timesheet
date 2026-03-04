@@ -1,7 +1,7 @@
 const { test, expect } = require('./fixtures');
 const { loginAndOpenFavourites, pickAddableProjectOption } = require('./helpers');
 
-test.setTimeout(90000);
+test.setTimeout(60000);
 
 test('TS-13217 Delete/remove action', async ({ page }) => {
   const favouritesPage = await loginAndOpenFavourites(page);
@@ -53,5 +53,6 @@ test('TS-13217 Delete/remove action', async ({ page }) => {
 
   expect(deleteObserved).toBeTruthy();
 });
+
 
 

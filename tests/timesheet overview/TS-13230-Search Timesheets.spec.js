@@ -1,7 +1,7 @@
 const { test, expect } = require('./fixtures');
 const { loginAndOpenTimesheetOverview } = require('./helpers');
 
-test.setTimeout(90000);
+test.setTimeout(60000);
 
 test('TS-13230 Search Timesheets', async ({ page }) => {
   const overviewPage = await loginAndOpenTimesheetOverview(page);
@@ -16,3 +16,4 @@ test('TS-13230 Search Timesheets', async ({ page }) => {
   await overviewPage.search('').catch(() => {});
   await expect(overviewPage.searchInput).toBeVisible();
 });
+

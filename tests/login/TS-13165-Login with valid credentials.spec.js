@@ -2,7 +2,7 @@ const { test, expect } = require('@playwright/test');
 const LoginPage = require('../../pages/loginpage');
 const { BASE_URL } = require('../constants');
 
-test.setTimeout(90000);
+test.setTimeout(60000);
 
 test('TS-13165 Login with valid credentials', async ({ page }) => {
   test.skip(!!process.env.CI, 'Corporate SSO login is unstable on hosted CI runners; run locally.');
@@ -17,3 +17,4 @@ test('TS-13165 Login with valid credentials', async ({ page }) => {
     page.getByRole('link', { name: /Timesheet by Month|Timesheet by Day|Timesheet Overview/i }).first()
   ).toBeVisible();
 });
+

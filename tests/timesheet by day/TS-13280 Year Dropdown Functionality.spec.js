@@ -1,7 +1,7 @@
-﻿const { test, expect } = require('./fixtures');
+const { test, expect } = require('./fixtures');
 const { loginAndOpenTimesheetByDay, pickAnotherOption } = require('./helpers');
 
-test.setTimeout(90000);
+test.setTimeout(60000);
 
 test('TS-13280 Year Dropdown Functionality', async ({ page }) => {
   const timesheetPage = await loginAndOpenTimesheetByDay(page);
@@ -17,5 +17,6 @@ test('TS-13280 Year Dropdown Functionality', async ({ page }) => {
     .poll(async () => (await timesheetPage.getSelectedYear()).trim().toLowerCase(), { timeout: 5000 })
     .toBe(targetYear.trim().toLowerCase());
 });
+
 
 

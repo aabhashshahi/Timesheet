@@ -1,7 +1,7 @@
 const { test, expect } = require('./fixtures');
 const { loginAndOpenTimesheetByMonth } = require('./helpers');
 
-test.setTimeout(90000);
+test.setTimeout(60000);
 
 test('TS-13312 Delete a Project Row', async ({ page }) => {
   const timesheetPage = await loginAndOpenTimesheetByMonth(page);
@@ -41,3 +41,4 @@ test('TS-13312 Delete a Project Row', async ({ page }) => {
 
   expect(deleteObserved).toBeTruthy();
 });
+

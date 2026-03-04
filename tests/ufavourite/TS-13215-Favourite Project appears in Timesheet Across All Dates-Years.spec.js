@@ -1,7 +1,7 @@
 const { test, expect } = require('./fixtures');
 const { loginAndOpenFavourites, pickAddableProjectOption } = require('./helpers');
 
-test.setTimeout(90000);
+test.setTimeout(60000);
 
 test('TS-13215 Favourite Project appears in Timesheet Across All Dates/Years', async ({ page }) => {
   const favouritesPage = await loginAndOpenFavourites(page);
@@ -30,7 +30,7 @@ test('TS-13215 Favourite Project appears in Timesheet Across All Dates/Years', a
   await page.getByRole('link', { name: /Timesheet by Month/i }).first().click();
   const monthHeading = page.getByRole('heading', { name: /Timesheet by Month/i }).first();
   await expect(monthHeading).toBeVisible();
-  await expect(page).toHaveURL(/timesheet/i);
+  await expect(page).toHaveURL(/timesheet-test\.deheus-apps\.com/i, { timeout: 60000 });
 
   const nameFound = projectName ? await page.getByText(projectName, { exact: false }).first().isVisible().catch(() => false) : false;
   const codeFound = costCode ? await page.getByText(new RegExp(`\\b${costCode}\\b`)).first().isVisible().catch(() => false) : false;
@@ -39,5 +39,6 @@ test('TS-13215 Favourite Project appears in Timesheet Across All Dates/Years', a
   }
   expect(true).toBeTruthy();
 });
+
 
 

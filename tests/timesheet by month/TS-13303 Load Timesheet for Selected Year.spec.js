@@ -1,7 +1,7 @@
 const { test, expect } = require('./fixtures');
 const { loginAndOpenTimesheetByMonth } = require('./helpers');
 
-test.setTimeout(90000);
+test.setTimeout(60000);
 
 test('TS-13303 Load Timesheet for Selected Year', async ({ page }) => {
   const timesheetPage = await loginAndOpenTimesheetByMonth(page);
@@ -17,3 +17,4 @@ test('TS-13303 Load Timesheet for Selected Year', async ({ page }) => {
 
   expect(/\b\d{4}\b/.test(referenceText)).toBeTruthy();
 });
+

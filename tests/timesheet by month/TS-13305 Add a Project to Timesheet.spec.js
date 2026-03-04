@@ -1,7 +1,7 @@
 const { test, expect } = require('./fixtures');
 const { loginAndOpenTimesheetByMonth, pickProjectOption } = require('./helpers');
 
-test.setTimeout(90000);
+test.setTimeout(60000);
 
 test('TS-13305 Add a Project to Timesheet', async ({ page }) => {
   const timesheetPage = await loginAndOpenTimesheetByMonth(page);
@@ -42,3 +42,4 @@ test('TS-13305 Add a Project to Timesheet', async ({ page }) => {
   test.skip(!projectAdded, 'Could not add a new project with available dropdown options.');
   expect(projectAdded).toBeTruthy();
 });
+

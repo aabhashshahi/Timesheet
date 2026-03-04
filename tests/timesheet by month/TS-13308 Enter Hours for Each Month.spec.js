@@ -1,7 +1,7 @@
 const { test, expect } = require('./fixtures');
 const { loginAndOpenTimesheetByMonth } = require('./helpers');
 
-test.setTimeout(90000);
+test.setTimeout(60000);
 
 test('TS-13308 Enter Hours for Each Month', async ({ page }) => {
   const timesheetPage = await loginAndOpenTimesheetByMonth(page);
@@ -36,3 +36,4 @@ test('TS-13308 Enter Hours for Each Month', async ({ page }) => {
     expect(Number.isNaN(numericValue)).toBeFalsy();
   }
 });
+

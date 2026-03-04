@@ -71,9 +71,10 @@ class LoginPage {
         await this.handlePostSubmitPrompts();
         await this.clickStaySignedInNo();
         await this.page
-            .waitForURL(/timesheet|userfavourite|usersheet|setting/i, { timeout: 90000 })
+            .waitForURL(/timesheet|userfavourite|usersheet|setting/i, { timeout: 60000 })
             .catch(() => {});
     }
 }
 
 module.exports = LoginPage;
+

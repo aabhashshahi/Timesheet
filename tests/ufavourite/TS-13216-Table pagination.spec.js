@@ -1,7 +1,7 @@
 const { test, expect } = require('./fixtures');
 const { loginAndOpenFavourites } = require('./helpers');
 
-test.setTimeout(90000);
+test.setTimeout(60000);
 
 test('TS-13216 Table pagination', async ({ page }) => {
   const favouritesPage = await loginAndOpenFavourites(page);
@@ -16,5 +16,6 @@ test('TS-13216 Table pagination', async ({ page }) => {
   await favouritesPage.setEntriesPerPage(target);
   await expect(favouritesPage.resultSummary).toBeVisible();
 });
+
 
 

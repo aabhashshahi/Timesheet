@@ -1,7 +1,7 @@
 const { test, expect } = require('./fixtures');
 const { loginAndOpenTimesheetByMonth } = require('./helpers');
 
-test.setTimeout(90000);
+test.setTimeout(60000);
 
 test('TS-13311 Automatic Total Calculation', async ({ page }) => {
   const timesheetPage = await loginAndOpenTimesheetByMonth(page);
@@ -43,3 +43,4 @@ test('TS-13311 Automatic Total Calculation', async ({ page }) => {
 
   expect(totalLooksValid).toBeTruthy();
 });
+
