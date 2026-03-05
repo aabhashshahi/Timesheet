@@ -38,6 +38,7 @@ steps:
       MS_EMAIL: $(MS_EMAIL)
       MS_PASSWORD: $(MS_PASSWORD)
       PLAYWRIGHT_HTML_OPEN: $(PLAYWRIGHT_HTML_OPEN)
+      CI: "true"
     continueOnError: true
 
   - script: node scripts/send-slack-report.js
@@ -48,7 +49,6 @@ steps:
       SLACK_BOT_TOKEN: $(SLACK_BOT_TOKEN)
       SLACK_CHANNEL_ID: $(SLACK_CHANNEL_ID)
       SLACK_TEST_DETAIL_LIMIT: "100"
-      PLAYWRIGHT_OUTCOME: $(Agent.JobStatus)
 
   - script: |
       mkdir -p "$(Build.SourcesDirectory)/playwright-report"
