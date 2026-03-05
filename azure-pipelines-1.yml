@@ -1,0 +1,92 @@
+trigger:
+  branches:
+    include:
+      - main
+      - master
+
+pr:
+  branches:
+    include:
+      - main
+      - master
+
+pool:
+  vmImage: "ubuntu-latest"
+
+variables:
+  NODE_VERSION: "20.x"
+  PLAYWRIGHT_HTML_OPEN: "never"
+
+stages:
+  - stage: E2E
+    displayName: "Playwright E2E"
+    jobs:
+      - job: run_tests
+        displayName: "Run Playwright suites"
+        timeoutInMinutes: 120
+        steps:
+          - checkout: self
+
+          - task: NodeTool@0
+            displayName: "Use Node.js $(NODE_VERSION)"
+            inputs:
+              versionSpec: "$(NODE_VERSION)"
+
+          - script: npm ci
+            displayName: "Install dependencies"
+
+          - script: npx playwright install --with-deps
+            displayName: "Install Playwright browsers"
+
+          # Run in 2 chunks to reduce timeout risk.
+          - script: |
+              npx playwright test tests/login tests/settings "tests/timesheet by day" --workers=1
+            displayName: "Run chunk 1 (login/settings/day)"
+            env:
+              MS_EMAIL: $(MS_EMAIL)
+              MS_PASSWORD: $(MS_PASSWORD)
+              PLAYWRIGHT_HTML_OPEN: $(PLAYWRIGHT_HTML_OPEN)
+              CI: "true"
+            continueOnError: true
+
+          - script: |
+              npx playwright test "tests/timesheet by month" tests/ufavourite "tests/timesheet overview" --workers=1
+            displayName: "Run chunk 2 (month/ufavourite/overview)"
+            env:
+              MS_EMAIL: $(MS_EMAIL)
+              MS_PASSWORD: $(MS_PASSWORD)
+              PLAYWRIGHT_HTML_OPEN: $(PLAYWRIGHT_HTML_OPEN)
+              CI: "true"
+            continueOnError: true
+
+          - script: node scripts/send-slack-report.js
+            displayName: "Send Slack report"
+            condition: and(always(), ne(variables['SLACK_WEBHOOK_URL'], ''))
+            env:
+              SLACK_WEBHOOK_URL: $(SLACK_WEBHOOK_URL)
+              SLACK_BOT_TOKEN: $(SLACK_BOT_TOKEN)
+              SLACK_CHANNEL_ID: $(SLACK_CHANNEL_ID)
+              SLACK_TEST_DETAIL_LIMIT: "100"
+              PLAYWRIGHT_OUTCOME: $(Agent.JobStatus)
+
+          - script: |
+              mkdir -p "$(Build.SourcesDirectory)/playwright-report"
+              mkdir -p "$(Build.SourcesDirectory)/test-results"
+            displayName: "Ensure artifact directories exist"
+            condition: always()
+
+          - task: PublishPipelineArtifact@1
+            displayName: "Publish Playwright report artifact"
+            condition: always()
+            inputs:
+              targetPath: "$(Build.SourcesDirectory)/playwright-report"
+              artifact: "playwright-report"
+              publishLocation: "pipeline"
+
+          - task: PublishPipelineArtifact@1
+            displayName: "Publish test-results artifact"
+            condition: always()
+            inputs:
+              targetPath: "$(Build.SourcesDirectory)/test-results"
+              artifact: "test-results"
+              publishLocation: "pipeline"
